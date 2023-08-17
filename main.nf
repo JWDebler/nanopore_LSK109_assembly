@@ -57,7 +57,7 @@ if (params.help) {
 nanoporeReads = Channel
     .fromPath(params.reads + "*.fastq.gz", checkIfExists: true)
     .map {file -> [file.simpleName, file]}
-    .tap { ReadsForDCSQC }
+    .tap { removeDuplicates }
     .view()
 
 process version_canu {
@@ -194,6 +194,22 @@ process versions {
     script:
     """
     cat canu.txt medaka.txt seqkit.txt flye.txt nextdenovo.txt chopper.txt minimap2.txt samtools.txt > versions.txt
+    """
+}
+
+process QC_remove_duplicate_readIDs {
+
+    label "seqkit"
+    tag {sampleID}
+
+    input:
+    tuple sampleID, "reads.fastq.gz" from removeDuplicates
+
+    output:
+    tuple sampleID, 'deduplicated.reads.fastq.gz' into ReadsForDCSQC
+
+    """
+    seqkit rmdup reads.fastq.gz > deduplicated.reads.fastq.gz
     """
 }
 
