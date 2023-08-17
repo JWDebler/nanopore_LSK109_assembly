@@ -1,8 +1,8 @@
 # Nanopore assembly pipeline for kit 14 duplex called reads
 
-This is a Nanopore assembly pipeline aimed at Kit 14 generated reads which have been duplex called using the [dorado](https://github.com/nanoporetech/dorado/) basecaller. It requires that you have separated the reads into `sampleID.duplex.fastq.gz` and `sampleID.simplex.fastq.gz`.
+This is a Nanopore assembly pipeline aimed at LSK109 chemistry and flowcell r9 series generated reads.
 
-It then does some basice QC by removing control DNA which is sometimes used during a run to debug potential problems, but which should not end up in the final assembly.
+It then does some basic QC by removing control DNA which is sometimes used during a run to debug potential problems, but which should not end up in the final assembly.
 
 Assembly happens using two different assemblers, Flye and nextDenovo. Both are very fast and have different strenghts. I have found that the nextDenovo assembly overall is better with fewer contigs, but tends to trim telomeres and sometimes loses the mitogenome. Flye however is great at maintaining telomeres and the mitogenome tends to fall out as a single, non-concatenated contig (other assemblers create tandem copies as they don't expect a circular sequence).
 Canu is used to generate corredted reads which I use to manually check and curate the assemblies in Geneious.
@@ -13,33 +13,27 @@ Currently this pipeline is optimised to run on a Nimbus instance with 16 cores a
 
 The pipeline requires you to basecall your raw fast5 or pod5 files with dorado and then split the reads into simplex and duplex.
 
-### Basecall with Dorado:
+### Basecall with Dorado or Guppy:
+
+If you are recalling old fast5 or pod5 data generated with LSK109 chemistry on an r9 series flowcell:
 
 - First download the latest model, this one is for kit 14 using the new 5 kHz sampling rate.
 ```
-dorado download --model dna_r10.4.1_e8.2_400bps_sup@v4.2.0
+dorado download --model dna_r9.4.1_e8_sup@v3.6
 ```
-- Then run basecalling and simplex/duplex separation:
+- Then run basecalling:
 
 ```
-dorado duplex dna_r10.4.1_e8.2_400bps_sup@v4.2.0 pod5s/ > sampleID.dorado.bam
-```
-### Seperate simplex and duplex reads
+dorado basecaller dna_r9.4.1_e8_sup@v3.6 pod5s/ --emit-fastq > sampleID.dorado.fastq && \
 
-Dorado generates a BAM file containing both the simplex and duplex reads. The respective reads can be extracted from that BAM file using samtools.
-
-```
-samtools view -O fastq -d dx:0 sampleID.dorado.bam |  gzip -9 >  sampleID.simplex.fastq.gz &&
-samtools view -O fastq -d dx:1 sampleID.dorado.bam |  gzip -9 >  sampleID.duplex.fastq.gz
+gzip -9 sampleID.dorado.fastq
 ```
 
 
 ## Running the pipeline
 
-After you have separated your reads into `sampleID.simplex.fastq.gz` and `sampleID.duplex.fastq.gz` you can run the pipeline by pointing `--reads` to the folder containing the fastq.gz files.
-
 ```
-nextflow run jwdebler/nanopore_kit14_assembly -resume -latest -profile docker,nimbus --reads "reads/"
+nextflow run jwdebler/nanopore_LSK109_assembly -resume -latest -profile docker,nimbus --reads "reads/"
 ```
 
 
