@@ -315,7 +315,7 @@ process flye {
     publishDir "${params.outdir}/${sampleID}/03-assembly", pattern: '*_flye.fasta'
 
     input:
-    tuple sampleID, "reads.fastq.gz", from FilteredForFlye
+    tuple sampleID, "reads.fastq.gz" from FilteredForFlye
 
     output:
     tuple sampleID, "${sampleID}_flye.fasta", "reads.fastq.gz" into MedakaFlye
