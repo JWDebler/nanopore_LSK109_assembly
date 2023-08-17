@@ -8,8 +8,7 @@ def helpMessage() {
     A pipeline for assembly and polishing of fungal genomes from Oxford Nanopore reads
 
     ## Examples
-    nextflow run nanopore_polishing.nf \
-    --nanoporeReads "03-trimmed-fastq/*.fastq.gz"
+    nextflow run jwdebler/nanopore_LSK109_assembly -resume -latest -profile docker,nimbus --reads "reads/"
 
     ## Parameters
     --reads <glob>
@@ -124,7 +123,7 @@ process nextdenovo_version {
     label "nextdenovo"
 
     output:
-    path 'versions.txt' into flye_version
+    path 'versions.txt' into nextdenovo_version
 
     """
     echo nextdenovo: >> versions.txt
