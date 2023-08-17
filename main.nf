@@ -55,7 +55,7 @@ if (params.help) {
 }
 
 nanoporeReads = Channel
-    .fromPath(params.reads, checkIfExists: true, type: "file")
+    .fromPath(params.reads + "*.fastq.gz", checkIfExists: true)
     .map {file -> [file.simpleName, file]}
     .tap { ReadsForDCSQC }
     .view()
