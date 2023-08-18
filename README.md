@@ -1,4 +1,4 @@
-# Nanopore assembly pipeline for kit 14 duplex called reads
+# Nanopore assembly pipeline for LSK109 chemistry and r9 series flowcells
 
 This is a Nanopore assembly pipeline aimed at LSK109 chemistry and flowcell r9 series generated reads.
 
