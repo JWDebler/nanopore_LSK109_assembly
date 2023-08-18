@@ -491,16 +491,17 @@ process Cleanup_ragtag {
     label "ragtag"
     tag {sampleID}
 
-    publishDir "${params.outdir}/${sampleID}/05-ragtag", fromPath: "ragtag_output/*.*"
+    publishDir "${params.outdir}/${sampleID}/05-ragtag"
 
     input:
     tuple sampleID, "nextdenovo.fasta", "flye.fasta" from NextDenovoForRagtag.join(FlyeForRagtag)
 
     output:
-    path "ragtag_output/"
+    any "ragtag.*"
 
     """
     ragtag.py scaffold nextdenovo.fasta flye.fasta
+    cp ragtag_output/* .
     """
 }
 
