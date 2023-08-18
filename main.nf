@@ -497,7 +497,7 @@ process Cleanup_ragtag {
     tuple sampleID, "nextdenovo.fasta", "flye.fasta" from NextDenovoForRagtag.join(FlyeForRagtag)
 
     output:
-    tuple "ragtag_output"
+    set "ragtag_output/*.*"
 
     """
     ragtag.py scaffold nextdenovo.fasta flye.fasta
