@@ -491,7 +491,7 @@ process Cleanup_ragtag {
     label "ragtag"
     tag {sampleID}
 
-    publishDir "${params.outdir}/${sampleID}/05-ragtag", from: "ragtag_output"
+    publishDir "${params.outdir}/${sampleID}/05-ragtag", saveAs: "."
 
     input:
     tuple sampleID, "nextdenovo.fasta", "flye.fasta" from NextDenovoForRagtag.join(FlyeForRagtag)
