@@ -236,7 +236,7 @@ process QC_nanoplot_Raw {
     publishDir "${params.outdir}/${sampleID}/01-QC", pattern: '*.html'
 
     input:
-    tuple sampleID, "${sampleID}.fastq.gz" from eadsForNanoplot
+    tuple sampleID, "${sampleID}.fastq.gz" from ReadsForNanoplot
 
     output:
     path "*.html"
