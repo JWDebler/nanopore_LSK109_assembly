@@ -1,7 +1,4 @@
 
-// Files need to be duplex called and split into "sampleID.duplex.fastq.gz" and "sampleID.simplex.fastq.gz"
-
-
 def helpMessage() {
     log.info"""
     # Nanopore LSK109 chemistry r9 flowcell genome assembly and polishing
@@ -208,7 +205,7 @@ process versions {
     """
 }
 
-process QC {
+process QC_read_removal_and_filtering {
 
     label "chopper"
     tag {sampleID}
@@ -218,14 +215,14 @@ process QC {
     tuple sampleID, "${sampleID}.fastq.gz" from ReadsForQC
 
     output:
-    tuple sampleID, "${sampleID}.duplex.chopper.200bp.q${params.quality}.fastq.gz" into FilteredDuplex200
-    tuple sampleID, "${sampleID}.duplex.chopper.${params.minlen}bp.q${params.quality}.fastq.gz" into FilteredDuplex1000
+    tuple sampleID, "${sampleID}.chopper.200bp.q${params.quality}.fastq.gz" into FilteredDuplex200
+    tuple sampleID, "${sampleID}.chopper.${params.minlen}bp.q${params.quality}.fastq.gz" into FilteredDuplex1000
     
 
     """
     wget https://raw.githubusercontent.com/JWDebler/nanopore_kit14_assembly/main/data/DCS.fasta
     minimap2 -d dcs.mmi DCS.fasta
-    seqkit rmdup -n ${sampleID}.fastq.gz | minimap2 -t "${task.cpus}" -ax map-ont dcs.mmi - | samtools view -O fastq -@ "${task.cpus}" - | chopper -t ${task.cpus}  -q ${params.quality} -l 200 | pigz -9 > ${sampleID}.duplex.chopper.200bp.q${params.quality}.fastq.gz 
+    seqkit rmdup -n ${sampleID}.fastq.gz | minimap2 -t "${task.cpus}" -ax map-ont dcs.mmi - | samtools view -O fastq -@ "${task.cpus}" - | chopper -t ${task.cpus}  -q ${params.quality} -l 200 | pigz -9 > ${sampleID}.chopper.200bp.q${params.quality}.fastq.gz 
     chopper -i ${sampleID}.chopper.200bp.q${params.quality}.fastq.gz -t ${task.cpus} -l ${params.minlen} | pigz -9 > ${sampleID}.chopper.${params.minlen}bp.q${params.quality}.fastq.gz
     """
 }
@@ -365,7 +362,7 @@ process Polishing_medaka_flye {
     tag {sampleID}
 
     input:
-    tuple sampleID, "flye.fasta", "reads.fastq.gz" from MedakaFlye.join(200bpForMedakaFlye)
+    tuple sampleID, "${sampleID}.flye.fasta", "${sampleID}.fastq.gz" from MedakaFlye.join(200bpForMedakaFlye)
 
     output:
     tuple sampleID, "${sampleID}_flye_medaka.fasta" into SeqkitFlye
@@ -389,7 +386,7 @@ process Polishing_medaka_nextdenovo {
     tag {sampleID}
 
     input:
-    tuple sampleID, "nextdenovo.fasta", "reads.fastq.gz"  from MedakaNextdenovo.join(200bpForMedakaNextdenovo)
+    tuple sampleID, "${sampleID}.nextdenovo.fasta", "${sampleID}.fastq.gz"  from MedakaNextdenovo.join(200bpForMedakaNextdenovo)
 
     output:
     tuple sampleID, "${sampleID}_nextenovo_medaka.fasta" into SeqkitNextdenovo
