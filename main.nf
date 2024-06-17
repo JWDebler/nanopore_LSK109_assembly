@@ -244,7 +244,7 @@ process QC_nanoplot_Raw {
     
     """
     NanoPlot \
-    --fastq reads.fastq \
+    --fastq ${sampleID}.fastq.gz \
     -o output && \
     cp output/NanoPlot-report.html ${sampleID}.nanoplot.html
     """
@@ -261,11 +261,11 @@ process QC_nanoplot_Chopper {
 
     output:
     path "*.html"
-    tuple sampleID, "reads.fastq.gz" into FilterdForAssembly
+    tuple sampleID, "${sampleID}.fastq.gz" into FilterdForAssembly
     
     """
     NanoPlot \
-    --fastq reads.fastq.gz \
+    --fastq ${sampleID}.fastq.gz \
     -o output && \
     cp output/NanoPlot-report.html ${sampleID}.nanoplot.chopper.html
     """
