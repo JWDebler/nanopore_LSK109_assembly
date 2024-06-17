@@ -62,7 +62,7 @@ if (params.help) {
 }
 
 nanoporeReads = Channel
-    .fromPath(params.reads + "*.fast{q,q.gz}", checkIfExists: true)
+    .fromPath(params.reads + "*.fastq.gz", checkIfExists: true)
     .map {file -> [file.simpleName, file]}
     .tap { ReadsForQC }
     .tap { ReadsForNanoplot }
