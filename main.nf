@@ -277,8 +277,8 @@ FilterdForAssembly
 .tap { FilteredForMedaka }
 
 FilteredDuplex200
-.tap { 200bpForMedakaFlye }
-.tap { 200bpForMedakaNextdenovo }
+.tap { Reads200bpForMedakaFlye }
+.tap { Reads200bpForMedakaNextdenovo }
 
 // flye assembly
 process Assembly_flye {
@@ -362,7 +362,7 @@ process Polishing_medaka_flye {
     tag {sampleID}
 
     input:
-    tuple sampleID, "${sampleID}.flye.fasta", "${sampleID}.fastq.gz" from MedakaFlye.join(200bpForMedakaFlye)
+    tuple sampleID, "${sampleID}.flye.fasta", "${sampleID}.fastq.gz" from MedakaFlye.join(Reads200bpForMedakaFlye)
 
     output:
     tuple sampleID, "${sampleID}_flye_medaka.fasta" into SeqkitFlye
@@ -386,7 +386,7 @@ process Polishing_medaka_nextdenovo {
     tag {sampleID}
 
     input:
-    tuple sampleID, "${sampleID}.nextdenovo.fasta", "${sampleID}.fastq.gz"  from MedakaNextdenovo.join(200bpForMedakaNextdenovo)
+    tuple sampleID, "${sampleID}.nextdenovo.fasta", "${sampleID}.fastq.gz"  from MedakaNextdenovo.join(Reads200bpForMedakaNextdenovo)
 
     output:
     tuple sampleID, "${sampleID}_nextenovo_medaka.fasta" into SeqkitNextdenovo
