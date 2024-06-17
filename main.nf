@@ -435,6 +435,7 @@ process Cleanup_seqkitNextdenovo {
     output:
     tuple sampleID, "${sampleID}_nextdenovo_medaka.fasta" into NextDenovoForRagtag
 
+
     """
     seqkit sort -lr ${sampleID}_nextdenovo_medaka.unsorted.fasta > ${sampleID}_nextdenovo_medaka.sorted.fasta
     seqkit replace -p '.+' -r 'nd_ctg_{nr}' --nr-width 2 ${sampleID}_nextdenovo_medaka.sorted.fasta > ${sampleID}_nextdenovo_medaka.fasta
@@ -462,35 +463,35 @@ process Cleanup_ragtag {
     """
 }
 
-// read correction
-process Correction_canu {
+// // read correction
+// process Correction_canu {
 
-    label "canu"
-    tag {sampleID}
-    publishDir "${params.outdir}/${sampleID}/02-processed-reads", pattern: '*.fasta.gz'
-    publishDir "${params.outdir}/${sampleID}/02-processed-reads", pattern: '*.report'
+//     label "canu"
+//     tag {sampleID}
+//     publishDir "${params.outdir}/${sampleID}/02-processed-reads", pattern: '*.fasta.gz'
+//     publishDir "${params.outdir}/${sampleID}/02-processed-reads", pattern: '*.report'
 
-    input:
-    tuple sampleID, "reads.fastq" from ReadsForCorrection
+//     input:
+//     tuple sampleID, "reads.fastq" from ReadsForCorrection
 
-    output:
-    path "${sampleID}.corrected.fasta.gz"
-    path "${sampleID}.corrected.report"
+//     output:
+//     path "${sampleID}.corrected.fasta.gz"
+//     path "${sampleID}.corrected.report"
 
-    script:
-    // See: https://groovy-lang.org/operators.html#_elvis_operator
-    fast_option = params.canuSlow ? "" : "-fast "
+//     script:
+//     // See: https://groovy-lang.org/operators.html#_elvis_operator
+//     fast_option = params.canuSlow ? "" : "-fast "
 
-    """
-    canu \
-    -correct \
-    -p ${sampleID} \
-    -d ${sampleID} \
-    genomeSize=${params.size} \
-    ${fast_option} \
-    -nanopore reads.fastq
+//     """
+//     canu \
+//     -correct \
+//     -p ${sampleID} \
+//     -d ${sampleID} \
+//     genomeSize=${params.size} \
+//     ${fast_option} \
+//     -nanopore reads.fastq
 
-    cp ${sampleID}/*correctedReads.fasta.gz ${sampleID}.corrected.fasta.gz
-    cp ${sampleID}/*.report ${sampleID}.corrected.report
-    """
-}
+//     cp ${sampleID}/*correctedReads.fasta.gz ${sampleID}.corrected.fasta.gz
+//     cp ${sampleID}/*.report ${sampleID}.corrected.report
+//     """
+// }
