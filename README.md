@@ -11,13 +11,13 @@ Currently this pipeline is optimised to run on a Nimbus instance with 16 cores a
 
 ## Input
 
-The pipeline requires you to basecall your raw fast5 or pod5 files with dorado and then split the reads into simplex and duplex.
+The pipeline requires you to basecall your raw fast5 or pod5 files with dorado and then compress the reads wigh gzip. The files need to be names "SampleID.fastq.gz" where 'SampleID' is whatever you want to call your sample. This ID will be used throughout the pipeline to name files.
 
 ### Basecall with Dorado or Guppy:
 
 If you are recalling old fast5 or pod5 data generated with LSK109 chemistry on an r9 series flowcell:
 
-- First download the latest model, this one is for kit 14 using the new 5 kHz sampling rate.
+- First download the latest model, this one is last available model for LSK-109 chemistry on R9 flowcells:
 ```
 dorado download --model dna_r9.4.1_e8_sup@v3.6
 ```
@@ -29,6 +29,11 @@ dorado basecaller dna_r9.4.1_e8_sup@v3.6 pod5s/ --emit-fastq > sampleID.dorado.f
 gzip -9 sampleID.dorado.fastq
 ```
 
+If you have the compute resources available you can try to correct the reads with the new dorado correct module, but the reads cannot be gzipped for that:
+
+```
+dorado correct sampleID.dorado.fastq > sampleID.dorado.corrected.fasta
+```
 
 ## Running the pipeline
 
@@ -50,21 +55,34 @@ We have a few profiles available to customise how the pipeline will run.
 ## Parameters
 
 ```
---reads <glob>
-    Required
-    A folder containing two files per sample. The basename of the file is used as the sample ID and must contain `duplex` and `simplex`. Example of file name: `Sample1.duplex.fastq.gz`, `Sample1.simplex.fastq.gz`.
 
---genomeSize
-    Default: 42m
-    Used by the assemblers to calculate read coverage
+    --reads <glob>
+        Required
+        A folder containing 1 files per sample. 
+        The basename of the file is used as the sample ID.
+       
+        Example of file names: `Sample1.fastq.gz`, `Sample2.fastq.gz`.
+        (Default: a folder called `reads/`)
 
---medakaModel <glob>
-    Default: r1041_e82_400bps_sup_v4.2.0 (kit 14, sup, 5 kHz)
-    The model that was used during basecalling.
-    r1041_e82_400bps_sup_v4.1.0 (kit 14, sup, 4 kHz)
-    r941_min_sup_g507 (LSK109, sup, 4kHz)
+    --genomeSize <glob>
+        not required
+        Size of genome, for example "42m" (Default: 42m)
 
---outdir <path>
-    Default: `assembly`
-    The directory to store the results in.
+    --medakaModel <glob>
+        not required
+        Which basecaller model was used?
+        r941_min_sup_g507 (kit109, sup)
+        (Default: r941_min_sup_g507)
+
+    --minlen
+        Min read length to keep for assembly
+        (Default: 1000)
+
+    --quality
+        Min read q-score to keep for read filtering
+        (Default: 10)
+
+    --outdir <path>
+        The directory to store the results in.
+        (Default: `assembly`)
 ```
