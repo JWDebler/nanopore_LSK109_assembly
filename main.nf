@@ -29,6 +29,14 @@ def helpMessage() {
         r941_min_sup_g507 (kit109, sup)
         (Default: r941_min_sup_g507)
 
+    --minlen
+        Min read length to keep for assembly
+        (Default: 1000)
+
+    --quality
+        Min read q-score to keep for read filtering
+        (Default: 10)
+
     --canuSlow
         Disables canu fast mode.
         (Default: false)
@@ -48,6 +56,8 @@ def helpMessage() {
 params.reads="reads/"
 params.size="42m"
 params.medakaModel="r941_min_sup_g507"
+params.quality="10"
+params.minlen="1000"
 
 if (params.help) {
     helpMessage()
@@ -57,7 +67,8 @@ if (params.help) {
 nanoporeReads = Channel
     .fromPath(params.reads + "*.fastq.gz", checkIfExists: true)
     .map {file -> [file.simpleName, file]}
-    .tap { removeDuplicates }
+    .tap { ReadsForQC }
+    .tap { ReadsForNanoplot }
     .view()
 
 process version_canu {
@@ -148,7 +159,7 @@ process version_chopper {
 
 process version_minimap2 {
 
-    label "minimap2"
+    label "chopper"
 
     output:
     path 'versions.txt' into minimap2_version
@@ -162,7 +173,7 @@ process version_minimap2 {
 
 process version_samtools {
 
-    label "samtools"
+    label "chopper"
 
     output:
     path 'versions.txt' into samtools_version
@@ -197,82 +208,28 @@ process versions {
     """
 }
 
-process QC_remove_duplicate_readIDs {
-
-    label "seqkit"
-    tag {sampleID}
-
-    input:
-    tuple sampleID, "reads.fastq.gz" from removeDuplicates
-
-    output:
-    tuple sampleID, 'deduplicated.reads.fastq.gz' into ReadsForDCSQC
-
-    """
-    seqkit rmdup reads.fastq.gz > deduplicated.reads.fastq.gz
-    """
-}
-
-process QC_DCS_minimap {
-
-    label "minimap2"
-    tag {sampleID}
-
-    input:
-    tuple sampleID, 'reads.fastq.gz' from ReadsForDCSQC
-
-    output:
-    tuple sampleID, 'reads.sam'into DCSalignments
-
-    """
-    wget https://raw.githubusercontent.com/JWDebler/nanopore_kit14_assembly/main/data/DCS.fasta
-    minimap2 -d dcs.mmi DCS.fasta
-    minimap2 -t "${task.cpus}" -ax map-ont dcs.mmi reads.fastq.gz > reads.sam
-    """
-
-}
-
-process QC_DCS_filtering_reads {
-
-    label "samtools"
-    tag {sampleID}
-
-    input:
-    tuple sampleID, 'reads.sam' from DCSalignments
-
-    output:
-    tuple sampleID, 'reads.fastq' into DCSFilteredReads
-
-    """
-    samtools view -@ "${task.cpus}" -b -f 4 reads.sam | samtools fastq -@ "${task.cpus}" - > reads.fastq
-    """
-}
-
-DCSFilteredReads
-.tap { ReadsForChopper }
-.tap { ReadsForQC }
-.tap { ReadsForCorrection }
-
-// filtering reads
-
-process QC_chopper {
+process QC {
 
     label "chopper"
     tag {sampleID}
     publishDir "${params.outdir}/${sampleID}/02-processed-reads", pattern: '*.fastq.gz'
 
     input:
-    tuple sampleID, 'reads.fastq' from ReadsForChopper
+    tuple sampleID, "${sampleID}.fastq.gz" from ReadsForQC
 
     output:
-    path "${sampleID}.chopper.fastq.gz"
-    tuple sampleID, "${sampleID}.chopper.fastq.gz" into FilteredReads
+    tuple sampleID, "${sampleID}.duplex.chopper.200bp.q${params.quality}.fastq.gz" into FilteredDuplex200
+    tuple sampleID, "${sampleID}.duplex.chopper.${params.minlen}bp.q${params.quality}.fastq.gz" into FilteredDuplex1000
+    
 
     """
-    cat reads.fastq | chopper -q 10 -l 200 | gzip -9 > ${sampleID}.chopper.fastq.gz
-
+    wget https://raw.githubusercontent.com/JWDebler/nanopore_kit14_assembly/main/data/DCS.fasta
+    minimap2 -d dcs.mmi DCS.fasta
+    seqkit rmdup -n ${sampleID}.fastq.gz | minimap2 -t "${task.cpus}" -ax map-ont dcs.mmi - | samtools view -O fastq -@ "${task.cpus}" - | chopper -t ${task.cpus}  -q ${params.quality} -l 200 | pigz -9 > ${sampleID}.duplex.chopper.200bp.q${params.quality}.fastq.gz 
+    chopper -i ${sampleID}.chopper.200bp.q${params.quality}.fastq.gz -t ${task.cpus} -l ${params.minlen} | pigz -9 > ${sampleID}.chopper.${params.minlen}bp.q${params.quality}.fastq.gz
     """
 }
+
 
 
 process QC_nanoplot_Raw {
@@ -282,7 +239,7 @@ process QC_nanoplot_Raw {
     publishDir "${params.outdir}/${sampleID}/01-QC", pattern: '*.html'
 
     input:
-    tuple sampleID, 'reads.fastq' from ReadsForQC
+    tuple sampleID, "${sampleID}.fastq.gz" from eadsForNanoplot
 
     output:
     path "*.html"
@@ -303,7 +260,7 @@ process QC_nanoplot_Chopper {
     publishDir "${params.outdir}/${sampleID}/01-QC", pattern: '*.html'
 
     input:
-    tuple sampleID, 'reads.fastq.gz' from FilteredReads
+    tuple sampleID, "${sampleID}.fastq.gz" from FilteredDuplex1000
 
     output:
     path "*.html"
@@ -322,6 +279,9 @@ FilterdForAssembly
 .tap { FilteredForNextdenovo }
 .tap { FilteredForMedaka }
 
+FilteredDuplex200
+.tap { 200bpForMedakaFlye }
+.tap { 200bpForMedakaNextdenovo }
 
 // flye assembly
 process Assembly_flye {
@@ -334,7 +294,7 @@ process Assembly_flye {
     tuple sampleID, "reads.fastq.gz" from FilteredForFlye
 
     output:
-    tuple sampleID, "${sampleID}_flye.fasta", "reads.fastq.gz" into MedakaFlye
+    tuple sampleID, "${sampleID}_flye.fasta" into MedakaFlye
 
     """
      flye \
@@ -359,7 +319,7 @@ process Assembly_nextdenovo {
     tuple sampleID, "reads.fastq.gz" from FilteredForNextdenovo
 
     output:
-    tuple sampleID, "${sampleID}_nextdenovo.fasta", "reads.fastq.gz" into MedakaNextdenovo
+    tuple sampleID, "${sampleID}_nextdenovo.fasta" into MedakaNextdenovo
     tuple sampleID, "${sampleID}.nextdenovo.corredted.fasta"
 
     """
@@ -405,7 +365,7 @@ process Polishing_medaka_flye {
     tag {sampleID}
 
     input:
-    tuple sampleID, "flye.fasta", "reads.fastq.gz" from MedakaFlye
+    tuple sampleID, "flye.fasta", "reads.fastq.gz" from MedakaFlye.join(200bpForMedakaFlye)
 
     output:
     tuple sampleID, "${sampleID}_flye_medaka.fasta" into SeqkitFlye
@@ -429,7 +389,7 @@ process Polishing_medaka_nextdenovo {
     tag {sampleID}
 
     input:
-    tuple sampleID, "nextdenovo.fasta", "reads.fastq.gz"  from MedakaNextdenovo
+    tuple sampleID, "nextdenovo.fasta", "reads.fastq.gz"  from MedakaNextdenovo.join(200bpForMedakaNextdenovo)
 
     output:
     tuple sampleID, "${sampleID}_nextenovo_medaka.fasta" into SeqkitNextdenovo
