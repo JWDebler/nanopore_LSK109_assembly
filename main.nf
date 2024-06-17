@@ -370,8 +370,8 @@ process Polishing_medaka_flye {
     """
     
     medaka_consensus \
-    -d flye.fasta \
-    -i reads.fastq.gz \
+    -d ${sampleID}.flye.fasta \
+    -i ${sampleID}.fastq.gz \
     -o ${sampleID}_medaka_output \
     -t ${task.cpus} \
     -m ${params.medakaModel}
@@ -393,8 +393,8 @@ process Polishing_medaka_nextdenovo {
 
     """
     medaka_consensus \
-    -d nextdenovo.fasta \
-    -i reads.fastq.gz \
+    -d ${sampleID}.nextdenovo.fasta \
+    -i ${sampleID}.fastq.gz \
     -o ${sampleID}_medaka_output \
     -t ${task.cpus} \
     -m ${params.medakaModel}
